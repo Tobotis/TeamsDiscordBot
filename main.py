@@ -30,7 +30,6 @@ class Game:
         await self.display_game_manager()  # Display the game manager embed in the game manager text channel
         await self.display_team_manager()
 
-
     async def handle_message(self, message):  # Takes a message and applies its content to the game
         if message.channel == self.game_manager:  # Check if the message is from the correct channel (only messages
             # in the game manager are accepted)
@@ -109,7 +108,6 @@ class Game:
         await self.add_reactions_to_embed()  # Add the default reactions to the embed
 
     async def display_team_manager(self, hide=False):
-        print(self.team_manager_embed)
         if self.team_manager_embed is not None:
             await self.team_manager_embed.delete()
             self.team_manager_embed = None
@@ -143,10 +141,10 @@ class Game:
             team = self.teams[j]
             string = "\u200b"
             if len(team) > 0:
-                string = str(team[0]) + "\t"
+                string = str(team[0].display_name) + "\t"
                 for i in range(1, len(team)):
                     string += str(team[i].display_name) + "\n"
-            embed.add_field(name="Team " + str(self.teams.index(team) + 1), value="```" + string + "```")
+            embed.add_field(name="Team " + str(j + 1), value="```" + string + "```")
         return embed
 
     def update_teams(self):
@@ -162,7 +160,6 @@ class Game:
         for i in range(len(self.teams)):
             team_length.append(len(self.teams[i]))
         self.teams[team_length.index(min(team_length))].append(player)
-
 
 
 games = []  # Keeps track of all games which are running
@@ -193,7 +190,8 @@ async def join_game(message):  # Join a game
                 game.players.append([message.author, message.author.voice.channel])  # Add the user to the players
                 game.add_player_to_teams(message.author)
                 await game.game_manager.send(
-                    str(message.author.display_name) + " joined the game. Have fun! Be nice!")  # Send a announcement in the game manager channel
+                    str(
+                        message.author.display_name) + " joined the game. Have fun! Be nice!")  # Send a announcement in the game manager channel
                 await game.display_game_manager()  # Rebuild the game manager embed and delete the old one
                 if game.random_teams:
                     await game.display_team_manager(hide=True)
