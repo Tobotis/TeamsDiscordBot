@@ -47,7 +47,7 @@ class Game:
             if reaction.message == self.game_manager_embed:
                 if reaction.emoji == "⬆️":  # Check if the reaction is the :arrow_up: emoji
                     self.team_count += 1  # Increase the team count
-                if reaction.emoji == "⬇️" and self.team_count >= 1:  # Check if the reaction is the :arrow_down: emoji
+                if reaction.emoji == "⬇️" and self.team_count > 1:  # Check if the reaction is the :arrow_down: emoji
                     self.team_count -= 1  # Decrease the team count
                 if reaction.emoji == "🎰":  # Check if the reaction ist the :slot_machine: emoji
                     self.random_teams = not self.random_teams  # Toggle the randomized teams
