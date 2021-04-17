@@ -49,6 +49,9 @@ class Game:
                     self.team_count += 1  # Increase the team count
                 if reaction.emoji == "⬇️" and self.team_count > 1:  # Check if the reaction is the :arrow_down: emoji
                     self.team_count -= 1  # Decrease the team count
+
+                self.update_teams()
+
                 if reaction.emoji == "🎰":  # Check if the reaction ist the :slot_machine: emoji
                     self.random_teams = not self.random_teams  # Toggle the randomized teams
                     if self.random_teams:
@@ -59,7 +62,6 @@ class Game:
                     await self.team_manager_embed.edit(
                         embed=self.get_team_manager_embed())
 
-                self.update_teams()
                 await self.game_manager_embed.edit(
                     embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
                 # displayed
