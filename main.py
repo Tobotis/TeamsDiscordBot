@@ -27,8 +27,8 @@ class Game:
         self.players.append([self.admin, message.author.voice.channel])  # The admin is added in the players list
         self.update_teams()
         self.add_player_to_teams(self.admin)
-        await self.display_game_manager()  # Display the game manager embed in the game manager text channel
-        await self.display_team_manager()
+        await self.rebuild_game_manager()  # Display the game manager embed in the game manager text channel
+        await self.rebuild_team_manager()
 
     async def handle_message(self, message):  # Takes a message and applies its content to the game
         if message.channel == self.game_manager:  # Check if the message is from the correct channel (only messages
@@ -55,9 +55,9 @@ class Game:
                 self.update_teams()
 
                 if self.random_teams:
-                    await self.display_team_manager(hide=True)
+                    await self.rebuild_team_manager(hide=True)
                 else:
-                    await self.display_team_manager()
+                    await self.rebuild_team_manager()
 
                 await self.game_manager_embed.edit(
                     embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
@@ -95,7 +95,7 @@ class Game:
         await self.category.delete()  # Delete the whole category
         games.remove(self)  # Remove the game from the current games
 
-    async def display_game_manager(self):  # Displays the game manager embed
+    async def rebuild_game_manager(self):  # Displays the game manager embed
         if self.game_manager_embed is not None:  # Check if the old game manager embed should be deleted
             # and if there is an old one existing
             await self.game_manager_embed.delete()  # Delete the game manager embed
@@ -107,7 +107,7 @@ class Game:
 
         await self.add_reactions_to_embed()  # Add the default reactions to the embed
 
-    async def display_team_manager(self, hide=False):
+    async def rebuild_team_manager(self, hide=False):
         if self.team_manager_embed is not None:
             await self.team_manager_embed.delete()
             self.team_manager_embed = None
@@ -192,11 +192,11 @@ async def join_game(message):  # Join a game
                 await game.game_manager.send(
                     str(
                         message.author.display_name) + " joined the game. Have fun! Be nice!")  # Send a announcement in the game manager channel
-                await game.display_game_manager()  # Rebuild the game manager embed and delete the old one
+                await game.rebuild_game_manager()  # Rebuild the game manager embed and delete the old one
                 if game.random_teams:
-                    await game.display_team_manager(hide=True)
+                    await game.rebuild_team_manager(hide=True)
                 else:
-                    await game.display_team_manager()
+                    await game.rebuild_team_manager()
                 break
             else:  # The user is already in the game
                 await message.channel.send("You are currently a player in this game.")  # Send an explanation
