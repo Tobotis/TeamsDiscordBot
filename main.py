@@ -123,7 +123,10 @@ class Game:
         for i in range(len(self.teams)):
             team = self.teams[i]
             for player in team:
-                await player.move_to(self.team_voice_channels[i])
+                try:
+                    await player.move_to(self.team_voice_channels[i])
+                except:
+                    pass
 
         self.running = True  # Set the game running
 
