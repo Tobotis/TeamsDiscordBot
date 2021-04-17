@@ -15,7 +15,7 @@ class Game:
         self.game_manager = None  # Game manager text channel
         self.admin = None  # User who created the game
         self.players = []  # List of all users in the game in the format [user, users voice channel before the game]
-        self.team_count = 2  # Number of teams which are playing
+        self.team_count = 5  # Number of teams which are playing
         self.game_manager_embed = None  # Embed of game manager (graphical overview)
         self.team_manager_embed = None
         self.random_teams = False  # True if the players should be in random teams, after the start of the game
@@ -29,7 +29,7 @@ class Game:
         self.game_manager = await self.category.create_text_channel(
             "GameManager")  # Create the game manager text channel (Channel for game settings)
         self.admin = message.author  # The author of the initial message becomes the admin of the game
-        self.players.append([self.admin, message.author.voice.channel])  # The admin is added in the players list
+        self.players.append([self.admin, message.author.voice.channel if message.author.voice is not None else None])  # The admin is added in the players list
         self.update_teams()
         self.add_player_to_teams(self.admin)
         await self.rebuild_game_manager()  # Display the game manager embed in the game manager text channel
@@ -38,18 +38,40 @@ class Game:
     async def handle_message(self, message):  # Takes a message and applies its content to the game
         if message.channel == self.game_manager:  # Check if the message is from the correct channel (only messages
             # in the game manager are accepted)
-            if message.content.startswith(
-                    "!endGame"):  # Check if the message is the !endGame command => the game should end
-                await self.end_game()  # End the game
-            if message.content.startswith(
-                    "!startGame"):  # Check if the message is the !startGame command => the game should start
-                await self.start_game()  # Start the game
+            if message.author == self.admin:
+                if message.content.startswith(
+                        "!endGame"):  # Check if the message is the !endGame command => the game should end
+                    await self.end_game()  # End the game
+                if message.content.startswith(
+                        "!startGame"):  # Check if the message is the !startGame command => the game should start
+                    await self.start_game()  # Start the game
+            elif message.content.startswith("!endGame") or message.content.startswith("!startGame"):
+                await message.channel.send(":x: You don't have the permission to start/end the game :x:")
+            if message.content.startswith("!team "):
+                answer = await self.change_team(message.author, message.content[6:])
+                if answer is not None:
+                    await message.channel.send(answer)
 
-    async def handle_reaction(self, reaction,
-                              user):  # Takes a reaction and the associated user and applies it to the game manager
+    async def change_team(self, user, team_string):
+        try:
+            team_number = int(team_string)
+            if 1 > team_number or team_number > self.team_count:
+                return "Please use a valid team."
+            for team in self.teams:
+                if user in team:
+                    team.remove(user)
+                    break
+            else:
+                return "You aren't a player in this game."
+            self.teams[team_number - 1].append(user)
+            await self.team_manager_embed.edit(embed=self.get_team_manager_embed())
+        except:
+            return "Please use a valid number."
+
+    async def handle_reaction(self, reaction, user):  # Takes a reaction and the associated user and applies it to the game manager
         if reaction.message.channel == self.game_manager and user != client.user:  # Check if the reaction is in the
             # correct channel (only reactions in the game manager are accepted) and if the user is not the bot itself
-            if reaction.message == self.game_manager_embed:
+            if reaction.message == self.game_manager_embed and user == self.admin:
                 if reaction.emoji == "⬆️":  # Check if the reaction is the :arrow_up: emoji
                     self.team_count += 1  # Increase the team count
                 if reaction.emoji == "⬇️" and self.team_count > 1:  # Check if the reaction is the :arrow_down: emoji
@@ -59,41 +81,50 @@ class Game:
 
                 if reaction.emoji == "🎰":  # Check if the reaction ist the :slot_machine: emoji
                     self.random_teams = not self.random_teams  # Toggle the randomized teams
+                    await self.rebuild_game_manager()
                     if self.random_teams:
                         await self.rebuild_team_manager(hide=True)
                     else:
                         await self.rebuild_team_manager()
                 elif not self.random_teams:
-                    await self.team_manager_embed.edit(
-                        embed=self.get_team_manager_embed())
-                    await self.team_manager_embed.clear_reactions()
-                    await self.add_reactions_to_team_manager_embed()
+                    await self.team_manager_embed.edit(embed=self.get_team_manager_embed())
+                    await self.game_manager_embed.edit(embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
+                    # displayed
+                    await self.game_manager_embed.clear_reactions()  # Clear the reactions => the users can make a new
+                    # reaction
+                    await self.add_reactions_to_game_manager_embed()  # Add the default reactions to the embed
+            elif reaction.message == self.game_manager_embed:
+                await reaction.message.channel.send(":x: You don't have the permission to change settings :x:")
 
-                await self.game_manager_embed.edit(
-                    embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
-                # displayed
-                await self.game_manager_embed.clear_reactions()  # Clear the reactions => the users can make a new
-                # reaction
-                await self.add_reactions_to_game_manager_embed()  # Add the default reactions to the embed
+
 
     async def start_game(self):  # Start the game
         if self.running:  # Check if the game is already running
             return
         if self.random_teams:  # Check if the game should start with random teams
+            self.teams = []
+            for j in range(self.team_count):
+                self.teams.append([])
             players = self.players.copy()  # Make a copy of the player list, to shuffle it
             random.shuffle(players)  # Randomize the player list
-            for i in range(self.team_count):  # Iterate through all the teams
-                vc = await self.category.create_voice_channel(
-                    "Team " + str(i + 1))  # Create a voice channel for the team with name Team [team index]
-                self.team_voice_channels.append(vc)  # Add the voice channel into the voice channel list
-            team = 0  # Keeps track of the current iterating team
-            for player in players:  # Iterate through all the players
-                await player[0].move_to(self.team_voice_channels[team],
-                                        reason="Game started")  # Move the player to the fitting voice channel
-                if team < self.team_count - 1:  # Check if the current team is in the team count boundaries
-                    team += 1  # Go to next team
+            team = 0
+            for i in range(len(players)):
+                self.teams[team].append(self.players[i][0])
+                if team < self.team_count - 1:
+                    team += 1
                 else:
-                    team = 0  # It iterated through all the teams and should begin from 0 again
+                    team = 0
+        print(self.teams)
+
+        for i in range(self.team_count):  # Iterate through all the teams
+            vc = await self.category.create_voice_channel("Team " + str(i + 1))  # Create a voice channel for the team with name Team [team index]
+            self.team_voice_channels.append(vc)  # Add the voice channel into the voice channel list
+
+        for i in range(len(self.teams)):
+            team = self.teams[i]
+            for player in team:
+                await player.move_to(self.team_voice_channels[i])
+
         self.running = True  # Set the game running
 
     async def end_game(self):  # Ends and deletes the game
@@ -126,17 +157,12 @@ class Game:
 
         message = await self.game_manager.send(embed=self.get_team_manager_embed())
         self.team_manager_embed = message
-        await self.add_reactions_to_team_manager_embed()
 
     async def add_reactions_to_game_manager_embed(
             self):  # Add the default reactions to the embed, so its easier for the user to react
         await self.game_manager_embed.add_reaction("⬆️")
         await self.game_manager_embed.add_reaction("⬇️")
         await self.game_manager_embed.add_reaction("🎰")
-
-    async def add_reactions_to_team_manager_embed(self):
-        for j in range(len(self.teams)):
-            await self.team_manager_embed.add_reaction(alphabet_emojis[j])
 
     def get_game_manager_embed(self):  # Get the game manager embed
         # Set the embed
@@ -150,7 +176,7 @@ class Game:
 
     def get_team_manager_embed(self):
         embed = discord.Embed(title="Team Management", colour=discord.Colour(0xd02e1c))
-        embed.set_footer(text="Change team by reacting to this message")
+        embed.set_footer(text="Change team with: !team [number]")
 
         for j in range(len(self.teams)):
             team = self.teams[j]
@@ -159,7 +185,7 @@ class Game:
                 string = str(team[0].display_name) + "\t"
                 for i in range(1, len(team)):
                     string += str(team[i].display_name) + "\n"
-            embed.add_field(name="Team " + alphabet_emojis[j], value="```" + string + "```")
+            embed.add_field(name="Team " + str(j + 1), value="```" + string + "```")
         return embed
 
     def update_teams(self):
@@ -202,7 +228,8 @@ async def join_game(message):  # Join a game
         if name.upper() == game.category.name.upper()[
                            6:]:  # Check if the name in the message is the same as the game name
             if message.author not in game.players:  # Check if the joining user is not already in the game
-                game.players.append([message.author, message.author.voice.channel])  # Add the user to the players
+                game.players.append([message.author,
+                                     message.author.voice.channel if message.author.voice is not None else None])  # Add the user to the players
                 game.add_player_to_teams(message.author)
                 await game.game_manager.send(
                     str(
