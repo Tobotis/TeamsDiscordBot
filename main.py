@@ -1,6 +1,11 @@
 import discord
 import random
 
+alphabet_emojis = [
+    "🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸",
+    "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"
+]
+
 
 # Game Class
 # noinspection PyUnresolvedReferences
@@ -58,16 +63,18 @@ class Game:
                         await self.rebuild_team_manager(hide=True)
                     else:
                         await self.rebuild_team_manager()
-                else:
+                elif not self.random_teams:
                     await self.team_manager_embed.edit(
                         embed=self.get_team_manager_embed())
+                    await self.team_manager_embed.clear_reactions()
+                    await self.add_reactions_to_team_manager_embed()
 
                 await self.game_manager_embed.edit(
                     embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
                 # displayed
                 await self.game_manager_embed.clear_reactions()  # Clear the reactions => the users can make a new
                 # reaction
-                await self.add_reactions_to_embed()  # Add the default reactions to the embed
+                await self.add_reactions_to_game_manager_embed()  # Add the default reactions to the embed
 
     async def start_game(self):  # Start the game
         if self.running:  # Check if the game is already running
@@ -108,7 +115,7 @@ class Game:
 
         self.game_manager_embed = message  # Set the new game manager embed
 
-        await self.add_reactions_to_embed()  # Add the default reactions to the embed
+        await self.add_reactions_to_game_manager_embed()  # Add the default reactions to the embed
 
     async def rebuild_team_manager(self, hide=False):
         if self.team_manager_embed is not None:
@@ -119,12 +126,17 @@ class Game:
 
         message = await self.game_manager.send(embed=self.get_team_manager_embed())
         self.team_manager_embed = message
+        await self.add_reactions_to_team_manager_embed()
 
-    async def add_reactions_to_embed(
+    async def add_reactions_to_game_manager_embed(
             self):  # Add the default reactions to the embed, so its easier for the user to react
         await self.game_manager_embed.add_reaction("⬆️")
         await self.game_manager_embed.add_reaction("⬇️")
         await self.game_manager_embed.add_reaction("🎰")
+
+    async def add_reactions_to_team_manager_embed(self):
+        for j in range(len(self.teams)):
+            await self.team_manager_embed.add_reaction(alphabet_emojis[j])
 
     def get_game_manager_embed(self):  # Get the game manager embed
         # Set the embed
@@ -147,7 +159,7 @@ class Game:
                 string = str(team[0].display_name) + "\t"
                 for i in range(1, len(team)):
                     string += str(team[i].display_name) + "\n"
-            embed.add_field(name="Team " + str(j + 1), value="```" + string + "```")
+            embed.add_field(name="Team " + alphabet_emojis[j], value="```" + string + "```")
         return embed
 
     def update_teams(self):
