@@ -51,14 +51,15 @@ class Game:
                     self.team_count -= 1  # Decrease the team count
                 if reaction.emoji == "🎰":  # Check if the reaction ist the :slot_machine: emoji
                     self.random_teams = not self.random_teams  # Toggle the randomized teams
+                    if self.random_teams:
+                        await self.rebuild_team_manager(hide=True)
+                    else:
+                        await self.rebuild_team_manager()
+                else:
+                    await self.team_manager_embed.edit(
+                        embed=self.get_team_manager_embed())
 
                 self.update_teams()
-
-                if self.random_teams:
-                    await self.rebuild_team_manager(hide=True)
-                else:
-                    await self.rebuild_team_manager()
-
                 await self.game_manager_embed.edit(
                     embed=self.get_game_manager_embed())  # Update the game manager embed => the new changes are
                 # displayed
