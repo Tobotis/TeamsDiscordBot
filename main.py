@@ -22,18 +22,29 @@ class Game:
         self.team_voice_channels = []  # List of all voice channels in the category of the current game
         self.running = False  # True if the game begins
         self.teams = []
+        self.role = None
 
     async def setup(self, message):  # Takes a message and creates/setups the game
-        self.category = await message.guild.create_category(
-            "GAME " + message.content[11:])  # Create the game category with the name => GAME [Name of the game]
+        self.role = await message.channel.guild.create_role(name="GAME " + message.content[11:])
+        await self.setup_category(message)
         self.game_manager = await self.category.create_text_channel(
             "GameManager")  # Create the game manager text channel (Channel for game settings)
         self.admin = message.author  # The author of the initial message becomes the admin of the game
         self.players.append([self.admin, message.author.voice.channel if message.author.voice is not None else None])  # The admin is added in the players list
+        await self.admin.add_roles(self.role)
         self.update_teams()
         self.add_player_to_teams(self.admin)
         await self.rebuild_game_manager()  # Display the game manager embed in the game manager text channel
         await self.rebuild_team_manager()
+
+
+    async def setup_category(self, message):
+        self.category = await message.guild.create_category(
+            "GAME " + message.content[11:])  # Create the game category with the name => GAME [Name of the game]
+        for role in message.channel.guild.roles:
+            await self.category.set_permissions(role, send_messages=False, add_reactions=False, connect=False)
+        await self.category.set_permissions(self.role, send_messages=True, add_reactions=True, connect=True)
+
 
     async def handle_message(self, message):  # Takes a message and applies its content to the game
         if message.channel == self.game_manager:  # Check if the message is from the correct channel (only messages
@@ -114,7 +125,6 @@ class Game:
                     team += 1
                 else:
                     team = 0
-        print(self.teams)
 
         for i in range(self.team_count):  # Iterate through all the teams
             vc = await self.category.create_voice_channel("Team " + str(i + 1))  # Create a voice channel for the team with name Team [team index]
@@ -137,6 +147,7 @@ class Game:
         for channel in self.category.channels:  # Iterate through all the channels in the game category
             await channel.delete()  # Delete the channel
         await self.category.delete()  # Delete the whole category
+        await self.role.delete()
         games.remove(self)  # Remove the game from the current games
 
     async def rebuild_game_manager(self):  # Displays the game manager embed
@@ -233,6 +244,7 @@ async def join_game(message):  # Join a game
             if message.author not in game.players:  # Check if the joining user is not already in the game
                 game.players.append([message.author,
                                      message.author.voice.channel if message.author.voice is not None else None])  # Add the user to the players
+                await message.author.add_roles(game.role)
                 game.add_player_to_teams(message.author)
                 await game.game_manager.send(
                     str(
@@ -263,6 +275,10 @@ class Client(discord.Client):
                     for channel in cat_channel.channels:  # Iterate through all the channels in this category
                         await channel.delete()  # Delete the channel
                     await cat_channel.delete()  # Delete the category
+            roles = guild.roles
+            for role in roles:
+                if role.name.startswith("GAME "):
+                    await role.delete()
 
     async def on_message(self, message):  # There is a message
         if message.author == client.user:  # Check if the author of the message is the bot itself
