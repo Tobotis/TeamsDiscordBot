@@ -3,7 +3,7 @@ import random
 
 alphabet_emojis = [
     "🇦", "🇧", "🇨", "🇩", "🇪", "🇫", "🇬", "🇭", "🇮", "🇯", "🇰", "🇱", "🇲", "🇳", "🇴", "🇵", "🇶", "🇷", "🇸",
-    "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿"
+    "🇹", "🇺", "🇻", "🇼", "🇽", "🇾", "🇿",
 ]
 
 
@@ -106,8 +106,6 @@ class Game:
                     await self.add_reactions_to_game_manager_embed()  # Add the default reactions to the embed
             elif reaction.message == self.game_manager_embed:
                 await reaction.message.channel.send(":x: You don't have the permission to change settings :x:")
-
-
 
     async def start_game(self):  # Start the game
         if self.running:  # Check if the game is already running
