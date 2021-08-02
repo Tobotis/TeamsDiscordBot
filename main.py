@@ -299,6 +299,6 @@ class Client(discord.Client):
                 # game
                 await game.handle_reaction(reaction, user)  # Handle the reaction of a specific game
 
-
+token = os.getenv("teamsbottoken")  # Get the token env-variable
 client = Client()  # Instantiate the client
-client.run("ODMyMjE3MzIyOTgyNDczNzk4.YHgkxw.f2TwACwDW2qxSOuzJtXrOwnuGYI")  # Run the client
+client.run(token)  # Run the client
