@@ -302,38 +302,3 @@ class Client(discord.Client):
 
 client = Client()  # Instantiate the client
 client.run("ODMyMjE3MzIyOTgyNDczNzk4.YHgkxw.f2TwACwDW2qxSOuzJtXrOwnuGYI")  # Run the client
-
-'''{
-  "embed": {
-    "title": "Players",
-    "color": 13643292,
-    "fields": [
-     
-      {
-        "name":"Team :one:",
-        "value": "```Heiholf\tTobotis\nFridolin\nHannes```",
-        "inline": true
-      },
-      {
-        "name":"Team :two:",
-        "value": "```Heiholf\tTobotis\nFridolin\nHannes```",
-        "inline": true
-      },
-      {
-        "name":"Team :three:",
-        "value": "```Heiholf\tTobotis\nFridolin\nHannes```",
-        "inline": true
-      },
-      {
-        "name":"Team :four:",
-        "value": "```Heiholf\tTobotis\nFridolin\nHannes```",
-        "inline": true
-      },
-      {
-        "name":"Team :five:",
-        "value": "```Heiholf\tTobotis\nFridolin\nHannes```",
-        "inline": true
-      }
-    ]
-  }
-}'''
